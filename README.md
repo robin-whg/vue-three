@@ -1,17 +1,3 @@
-# Vue 3 + Typescript + Vite
+# Vue Three
 
-Template for Vue Projects based on [Vitesse](https://github.com/antfu/vitesse).
-
-## Features/Plugins
-
-- Typescript
-- File based routing
-- Layouts
-- Auto import components
-- Heroicons
-- Tailwind
-- Vueuse/Head
-- Vueuse
-- Pinia
-- Vue API auto imports
-- Headless UI
+Drag and Drop 3D Viewer made with ThreeJS and Vue 3 written in Typescript.
