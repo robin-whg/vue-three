@@ -9,9 +9,11 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.4.3",
+    "@types/three": "^0.137.0",
     "@vueuse/core": "^7.5.3",
     "@vueuse/head": "^0.7.4",
     "pinia": "^2.0.9",
+    "three": "^0.137.4",
     "vue": "^3.2.25",
     "vue-router": "4"
   },

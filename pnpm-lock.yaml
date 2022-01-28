@@ -6,6 +6,7 @@ specifiers:
   '@iconify-json/heroicons-outline': ^1.0.2
   '@tailwindcss/typography': ^0.5.0
   '@types/node': ^17.0.12
+  '@types/three': ^0.137.0
   '@typescript-eslint/eslint-plugin': ^5.10.1
   '@typescript-eslint/parser': ^5.10.1
   '@vitejs/plugin-vue': ^2.0.0
@@ -21,6 +22,7 @@ specifiers:
   postcss: ^8.4.5
   prettier: ^2.5.1
   tailwindcss: ^3.0.13
+  three: ^0.137.4
   ts-node: ^10.4.0
   typescript: ^4.4.4
   unplugin-auto-import: ^0.5.11
@@ -35,9 +37,11 @@ specifiers:
 
 dependencies:
   '@headlessui/vue': 1.4.3_vue@3.2.26
+  '@types/three': 0.137.0
   '@vueuse/core': 7.5.3_vue@3.2.26
   '@vueuse/head': 0.7.4_vue@3.2.26
   pinia: 2.0.9_typescript@4.5.4+vue@3.2.26
+  three: 0.137.4
   vue: 3.2.26
   vue-router: 4.0.12_vue@3.2.26
 
@@ -380,6 +384,10 @@ packages:
   /@types/parse-json/4.0.0:
     resolution: {integrity: sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==}
     dev: true
+
+  /@types/three/0.137.0:
+    resolution: {integrity: sha512-Xc5EAlfYmgrCLI/VlSVqiRJAtzhWF0Rw2jSq48nqJy+Hcb5sfDOXyfZn1+RNcHyi9l8CeCAXCZygO8IyeOJVEA==}
+    dev: false
 
   /@types/throttle-debounce/2.1.0:
     resolution: {integrity: sha512-5eQEtSCoESnh2FsiLTxE121IiE60hnMqcb435fShf4bpLRjEu1Eoekht23y6zXS9Ts3l+Szu3TARnTsA0GkOkQ==}
@@ -3242,6 +3250,10 @@ packages:
   /text-table/0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
     dev: true
+
+  /three/0.137.4:
+    resolution: {integrity: sha512-kUyOZNX+dMbvaS0mGYM1BaXHkHVNQdpryWH8dBg3mn725dJcTo9/5rjyH+OJ8V0r+XbZPz7sncV+c3Gjpc9UBA==}
+    dev: false
 
   /to-fast-properties/2.0.0:
     resolution: {integrity: sha1-3F5pjL0HkmW8c+A3doGk5Og/YW4=}
