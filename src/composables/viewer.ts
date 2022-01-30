@@ -1,5 +1,9 @@
 import {
   ACESFilmicToneMapping,
+  BoxGeometry,
+  Mesh,
+  MeshBasicMaterial,
+  PMREMGenerator,
   PerspectiveCamera,
   Scene,
   WebGLRenderer,
@@ -7,12 +11,12 @@ import {
 } from "three"
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js"
 
 export const useViewer = (canvas: HTMLCanvasElement) => {
   const scene = new Scene()
 
   const contextAttributes: WebGLContextAttributes = {
-    alpha: true,
     antialias: true,
     powerPreference: "high-performance",
   }
@@ -26,6 +30,7 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
   const renderer = new WebGLRenderer({
     canvas,
     context,
+    alpha: true,
   })
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 2
@@ -48,6 +53,22 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
   controls.target.set(0, 0, 0)
   controls.update()
 
+  new RGBELoader().load("/adams_place_bridge_1k.hdr", (texture) => {
+    // texture.mapping = EquirectangularReflectionMapping
+    // scene.environment = texture
+    const pmremGenerator = new PMREMGenerator(renderer)
+    pmremGenerator.compileEquirectangularShader()
+    const envMap = pmremGenerator.fromEquirectangular(texture).texture
+    scene.environment = envMap
+    texture.dispose()
+    pmremGenerator.dispose()
+  })
+
+  const material = new MeshBasicMaterial()
+  const geometry = new BoxGeometry(1, 1, 1)
+  const mesh = new Mesh(geometry, material)
+  scene.add(mesh)
+
   // Rendering
   function resizeRenderer(renderer: WebGLRenderer) {
     const pixelRatio = window.devicePixelRatio < 3 ? window.devicePixelRatio : 2
@@ -66,7 +87,6 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
     renderRequested = undefined
 
     if (resizeRenderer(renderer)) {
-      const canvas = renderer.domElement
       camera.aspect = canvas.clientWidth / canvas.clientHeight
       camera.updateProjectionMatrix()
     }
