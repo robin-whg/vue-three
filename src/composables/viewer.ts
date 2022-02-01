@@ -1,20 +1,23 @@
 import {
   ACESFilmicToneMapping,
-  BoxGeometry,
-  Mesh,
-  MeshBasicMaterial,
+  Box3,
   PMREMGenerator,
   PerspectiveCamera,
   Scene,
+  Vector3,
   WebGLRenderer,
   sRGBEncoding,
 } from "three"
 
+import type { Group, Object3D } from "three"
+
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js"
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
 
-export const useViewer = (canvas: HTMLCanvasElement) => {
-  const scene = new Scene()
+export function useViewer() {
+  const canvas = document.createElement("canvas")
 
   const contextAttributes: WebGLContextAttributes = {
     antialias: true,
@@ -25,37 +28,30 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
     ? canvas.getContext("webgl2", contextAttributes)
     : canvas.getContext("webgl", contextAttributes)
 
-  if (!context) return
+  if (!context) throw new Error("no context")
 
-  const renderer = new WebGLRenderer({
-    canvas,
-    context,
-    alpha: true,
-  })
+  const renderer = new WebGLRenderer({ canvas, context, alpha: true })
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 2
   renderer.outputEncoding = sRGBEncoding
   renderer.physicallyCorrectLights = true
+  renderer.domElement.style.height = "inherit"
+  renderer.domElement.style.width = "inherit"
 
-  // Camera
-  const fov = 75
-  const aspect = 2
-  const near = 0.1
-  const far = 50
-  const camera = new PerspectiveCamera(fov, aspect, near, far)
+  const camera = new PerspectiveCamera(75, 2, 0.1, 50)
   camera.position.set(0.25, 1, 1)
 
-  // Controls
-  const controls = new OrbitControls(camera, canvas)
+  const controls = new OrbitControls(camera, renderer.domElement)
   controls.enablePan = true
   controls.enableDamping = true
   controls.dampingFactor = 0.5
   controls.target.set(0, 0, 0)
   controls.update()
 
+  const scene = new Scene()
+  const objects: Object3D[] = reactive([])
+
   new RGBELoader().load("/adams_place_bridge_1k.hdr", (texture) => {
-    // texture.mapping = EquirectangularReflectionMapping
-    // scene.environment = texture
     const pmremGenerator = new PMREMGenerator(renderer)
     pmremGenerator.compileEquirectangularShader()
     const envMap = pmremGenerator.fromEquirectangular(texture).texture
@@ -64,13 +60,10 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
     pmremGenerator.dispose()
   })
 
-  const material = new MeshBasicMaterial()
-  const geometry = new BoxGeometry(1, 1, 1)
-  const mesh = new Mesh(geometry, material)
-  scene.add(mesh)
+  let renderRequested = false
 
-  // Rendering
   function resizeRenderer(renderer: WebGLRenderer) {
+    const canvas = renderer.domElement
     const pixelRatio = window.devicePixelRatio < 3 ? window.devicePixelRatio : 2
     const width = (canvas.clientWidth * pixelRatio) | 0
     const height = (canvas.clientHeight * pixelRatio) | 0
@@ -81,10 +74,9 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
     return needResize
   }
 
-  let renderRequested: true | false | undefined = false
-
   function render() {
-    renderRequested = undefined
+    const canvas = renderer.domElement
+    renderRequested = false
 
     if (resizeRenderer(renderer)) {
       camera.aspect = canvas.clientWidth / canvas.clientHeight
@@ -95,8 +87,6 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
     renderer.render(scene, camera)
   }
 
-  render()
-
   function requestRender() {
     if (!renderRequested) {
       renderRequested = true
@@ -104,6 +94,97 @@ export const useViewer = (canvas: HTMLCanvasElement) => {
     }
   }
 
-  controls.addEventListener("change", requestRender)
-  window.addEventListener("resize", requestRender)
+  onMounted(() => {
+    controls.addEventListener("change", requestRender)
+    window.addEventListener("resize", requestRender)
+  })
+
+  onUnmounted(() => {
+    controls.removeEventListener("change", requestRender)
+    window.removeEventListener("resize", requestRender)
+  })
+
+  function mount(element: HTMLDivElement) {
+    element.appendChild(canvas)
+  }
+
+  function centerObject(object: Object3D) {
+    const box = new Box3().setFromObject(object)
+    const boxCenter = box.getCenter(new Vector3())
+    object.position.set(boxCenter.x * -1, boxCenter.y * -1, boxCenter.z * -1)
+  }
+
+  const progress = ref(0)
+
+  function loadGLTFFile(fileUrl: string): Promise<Group> {
+    return new Promise((resolve, reject) => {
+      const dracoLoader = new DRACOLoader()
+      dracoLoader.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
+      const loader = new GLTFLoader().setDRACOLoader(dracoLoader)
+      loader.load(
+        fileUrl,
+        (gltf) => {
+          const root = gltf.scene
+          scene.add(root)
+          centerObject(root)
+          const newObjects = root.children.flatMap((x) => x)
+          objects.push(...newObjects)
+          requestRender()
+          resolve(gltf.scene)
+        },
+        (xhr) => {
+          progress.value = Math.floor((xhr.loaded / xhr.total) * 100)
+        },
+        (error) => {
+          reject(error)
+        }
+      )
+    })
+  }
+
+  function focusSelection(selection: Object3D[], fitOffset = 1.2) {
+    const box = new Box3()
+
+    for (const object of selection) box.expandByObject(object)
+
+    const size = box.getSize(new Vector3())
+    const center = box.getCenter(new Vector3())
+
+    const maxSize = Math.max(size.x, size.y, size.z)
+    const fitHeightDistance =
+      maxSize / (2 * Math.atan((Math.PI * camera.fov) / 360))
+    const fitWidthDistance = fitHeightDistance / camera.aspect
+    const distance = fitOffset * Math.max(fitHeightDistance, fitWidthDistance)
+
+    const direction = controls.target
+      .clone()
+      .sub(camera.position)
+      .normalize()
+      .multiplyScalar(distance)
+
+    controls.maxDistance = distance * 10
+    controls.target.copy(center)
+
+    camera.near = distance / 100
+    camera.far = distance * 100
+    camera.updateProjectionMatrix()
+
+    camera.position.copy(controls.target).sub(direction)
+
+    controls.update()
+
+    requestRender()
+  }
+
+  return {
+    renderer,
+    camera,
+    controls,
+    scene,
+    objects,
+    mount,
+    progress,
+    loadGLTFFile,
+    focusSelection,
+  }
 }
