@@ -1,21 +1,26 @@
 <script setup lang="ts">
 import { useViewer } from "~/composables"
 
-const canvas = ref<HTMLCanvasElement>()
+const container = ref<HTMLDivElement>()
 
-onMounted(async () => {
-  if (canvas.value === undefined) return
-  await init(canvas.value)
+const viewer = useViewer()
+
+onMounted(() => {
+  if (!container.value) return
+  viewer.mount(container.value)
 })
 
-async function init(canvas: HTMLCanvasElement) {
-  useViewer(canvas)
-  // await viewer?.loadHdrLighting(
-  //   "https://firebasestorage.googleapis.com/v0/b/gs-waermesysteme.appspot.com/o/hdrs%2Fadams_place_bridge_1k.hdr?alt=media&token=6a191c00-e0eb-452c-a6e4-2aacab14fefc"
-  // )
+try {
+  await viewer.loadGLTFFile("url")
+} catch (error) {
+  console.error(error)
 }
 </script>
 
 <template>
-  <canvas ref="canvas" class="h-screen w-screen"></canvas>
+  <ViewerNavbar></ViewerNavbar>
+  <div
+    ref="container"
+    class="h-screen w-screen cursor-grab active:cursor-grabbing"
+  ></div>
 </template>
